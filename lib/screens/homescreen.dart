@@ -3,8 +3,8 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:jokes_on_the_go/components/joke.dart';
 import 'package:jokes_on_the_go/services/api.dart';
-
 import '../services/storage.dart';
+import 'package:flutter_slidable/flutter_slidable.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -16,6 +16,7 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   late API _api;
   late ScoreManager _scoreManager;
+  late JokeManager _jokeManager;
   late int _page;
 
   List<Joke> allJokes = [];
@@ -38,7 +39,9 @@ class _HomeScreenState extends State<HomeScreen> {
     }
     _api = API();
     _scoreManager = ScoreManager();
-    _scoreManager.init().then((value) async {
+    _jokeManager = JokeManager();
+    _scoreManager.init();
+    _jokeManager.init().then((value) async {
       _fetchJokes();
     });
   }
@@ -68,7 +71,7 @@ class _HomeScreenState extends State<HomeScreen> {
     }
 
     final jokesResponse =
-        await _api.fetchJokes(_page); // Fetch jokes when the app initializes
+    await _api.fetchJokes(_page); // Fetch jokes when the app initializes
     if (mounted) {
       //make sure we have the up to date scores
       await _patchScores(jokesResponse);
@@ -116,47 +119,65 @@ class _HomeScreenState extends State<HomeScreen> {
               const SizedBox(height: 25),
               isLoading
                   ? const CircularProgressIndicator(
-                      color: Color(0xFF9575cd),
-                    ) // Show loading indicator while fetching data
+                color: Color(0xFF9575cd),
+              ) // Show loading indicator while fetching data
                   : allJokes.isEmpty
-                      ? const Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
+                  ? const Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    "We couldn't fetch any jokes!",
+                    style:
+                    TextStyle(fontSize: 32, color: Colors.grey),
+                    textAlign: TextAlign.center,
+                  ),
+                  SizedBox(height: 40),
+                  Icon(
+                    Icons.report_problem,
+                    size: 90,
+                    color: Colors.grey,
+                  ),
+                ],
+              )
+                  : Expanded(
+                child: ListView.separated(
+                  padding: const EdgeInsets.only(bottom: 70),
+                  itemCount: allJokes.length,
+                  separatorBuilder: (context, index) =>
+                  const SizedBox(height: 10),
+                  itemBuilder: (context, index) {
+                    //sort the jokes based on their score
+                    allJokes
+                        .sort((a, b) => b.score.compareTo(a.score));
+                    Joke joke = allJokes[index];
+                    return Slidable(
+                      // The start action pane is the left side when using a right-to-left swipe
+                        endActionPane: ActionPane(
+                          motion: const BehindMotion(),
                           children: [
-                            Text(
-                              "We couldn't fetch any jokes!",
-                              style:
-                                  TextStyle(fontSize: 32, color: Colors.grey),
-                              textAlign: TextAlign.center,
-                            ),
-                            SizedBox(height: 40),
-                            Icon(
-                              Icons.report_problem,
-                              size: 90,
-                              color: Colors.grey,
-                            ),
+                            SlidableAction(
+                              onPressed: (BuildContext context) {
+                                _jokeManager
+                                    .saveFavJokesToLocal(joke);
+                              },
+                              backgroundColor:
+                              const Color(0xFFF06292),
+                              foregroundColor: Colors.white,
+                              icon: Icons.favorite,
+                              label: 'Add to Favorites',
+                            )
                           ],
-                        )
-                      : Expanded(
-                          child: ListView.separated(
-                            padding: const EdgeInsets.only(bottom: 70),
-                            itemCount: allJokes.length,
-                            separatorBuilder: (context, index) =>
-                                const SizedBox(height: 10),
-                            itemBuilder: (context, index) {
-                              //sort the jokes based on their score
-                              allJokes
-                                  .sort((a, b) => b.score.compareTo(a.score));
-                              Joke joke = allJokes[index];
-                              return JokeCard(
-                                joke: joke,
-                                toggleVote: (UpdateAction action) {
-                                  _toggleVote(joke, action);
-                                },
-                                index: index,
-                              );
-                            },
-                          ),
                         ),
+                        child: JokeCard(
+                          joke: joke,
+                          toggleVote: (UpdateAction action) {
+                            _toggleVote(joke, action);
+                          },
+                          index: index,
+                        ));
+                  },
+                ),
+              )
             ],
           ),
         ),
@@ -186,11 +207,11 @@ class _HomeScreenState extends State<HomeScreen> {
               },
               style: ButtonStyle(
                 shadowColor:
-                    MaterialStateProperty.all<Color>(Colors.transparent),
+                MaterialStateProperty.all<Color>(Colors.transparent),
                 backgroundColor:
-                    MaterialStateProperty.all<Color>(Colors.transparent),
+                MaterialStateProperty.all<Color>(Colors.transparent),
                 foregroundColor:
-                    MaterialStateProperty.all<Color>(Colors.transparent),
+                MaterialStateProperty.all<Color>(Colors.transparent),
               ),
               child: const Text('New Jokes',
                   style: TextStyle(

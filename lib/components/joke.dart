@@ -11,7 +11,11 @@ class Joke {
     return Joke(json['joke'], json['id'],
         json.containsKey('score') ? json['score'] : 0);
   }
+  toJson() {
+    return {'joke': joke, 'id': id, 'score': score};
+  }
 }
+
 
 //set the update action types
 enum UpdateAction {
