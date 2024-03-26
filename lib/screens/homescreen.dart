@@ -3,7 +3,7 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:jokes_on_the_go/components/joke.dart';
 import 'package:jokes_on_the_go/services/api.dart';
-import '../services/storage.dart';
+import 'package:jokes_on_the_go/services/storage.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -17,6 +17,7 @@ class _HomeScreenState extends State<HomeScreen> {
   late API _api;
   late ScoreManager _scoreManager;
   late JokeManager _jokeManager;
+  late StatisticsManager _statisticsManager;
   late int _page;
 
   List<Joke> allJokes = [];
@@ -38,6 +39,8 @@ class _HomeScreenState extends State<HomeScreen> {
       _page = API.lastPage;
     }
     _api = API();
+    _statisticsManager = StatisticsManager();
+    _statisticsManager.init();
     _scoreManager = ScoreManager();
     _jokeManager = JokeManager();
     _scoreManager.init();
@@ -54,7 +57,7 @@ class _HomeScreenState extends State<HomeScreen> {
   //to resole the scores
   Future<void> _patchScores(List<Joke> jokes) async {
     for (Joke joke in jokes) {
-      //check if joke has already been voted
+      //check if joke already voted
       int? score = await _scoreManager.getScoreForId(joke.id);
       if (score != null) {
         joke.score = score;
@@ -71,7 +74,7 @@ class _HomeScreenState extends State<HomeScreen> {
     }
 
     final jokesResponse =
-    await _api.fetchJokes(_page); // Fetch jokes when the app initializes
+        await _api.fetchJokes(_page); // Fetch jokes when the app initializes
     if (mounted) {
       //make sure we have the up to date scores
       await _patchScores(jokesResponse);
@@ -100,6 +103,12 @@ class _HomeScreenState extends State<HomeScreen> {
       //save the voted score
       _scoreManager.setScoreForId(joke.id, joke.score);
     }
+    //update the statistics
+    if (action == UpdateAction.downvote) {
+      _statisticsManager.incrementKey(STATISTICS.DOWNVOTE, 1);
+    } else {
+      _statisticsManager.incrementKey(STATISTICS.UPVOTE, 1);
+    }
   }
 
   @override
@@ -119,65 +128,65 @@ class _HomeScreenState extends State<HomeScreen> {
               const SizedBox(height: 25),
               isLoading
                   ? const CircularProgressIndicator(
-                color: Color(0xFF9575cd),
-              ) // Show loading indicator while fetching data
+                      color: Color(0xFF9575cd),
+                    ) // Show loading indicator while fetching data
                   : allJokes.isEmpty
-                  ? const Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    "We couldn't fetch any jokes!",
-                    style:
-                    TextStyle(fontSize: 32, color: Colors.grey),
-                    textAlign: TextAlign.center,
-                  ),
-                  SizedBox(height: 40),
-                  Icon(
-                    Icons.report_problem,
-                    size: 90,
-                    color: Colors.grey,
-                  ),
-                ],
-              )
-                  : Expanded(
-                child: ListView.separated(
-                  padding: const EdgeInsets.only(bottom: 70),
-                  itemCount: allJokes.length,
-                  separatorBuilder: (context, index) =>
-                  const SizedBox(height: 10),
-                  itemBuilder: (context, index) {
-                    //sort the jokes based on their score
-                    allJokes
-                        .sort((a, b) => b.score.compareTo(a.score));
-                    Joke joke = allJokes[index];
-                    return Slidable(
-                      // The start action pane is the left side when using a right-to-left swipe
-                        endActionPane: ActionPane(
-                          motion: const BehindMotion(),
+                      ? const Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            SlidableAction(
-                              onPressed: (BuildContext context) {
-                                _jokeManager
-                                    .saveFavJokesToLocal(joke);
-                              },
-                              backgroundColor:
-                              const Color(0xFFF06292),
-                              foregroundColor: Colors.white,
-                              icon: Icons.favorite,
-                              label: 'Add to Favorites',
-                            )
+                            Text(
+                              "We couldn't fetch any jokes!",
+                              style:
+                                  TextStyle(fontSize: 32, color: Colors.grey),
+                              textAlign: TextAlign.center,
+                            ),
+                            SizedBox(height: 40),
+                            Icon(
+                              Icons.report_problem,
+                              size: 90,
+                              color: Colors.grey,
+                            ),
                           ],
-                        ),
-                        child: JokeCard(
-                          joke: joke,
-                          toggleVote: (UpdateAction action) {
-                            _toggleVote(joke, action);
-                          },
-                          index: index,
-                        ));
-                  },
-                ),
-              )
+                        )
+                      : Expanded(
+                          child: ListView.separated(
+                            padding: const EdgeInsets.only(bottom: 70),
+                            itemCount: allJokes.length,
+                            separatorBuilder: (context, index) =>
+                                const SizedBox(height: 10),
+                            itemBuilder: (context, index) {
+                              //sort the jokes based on their score
+                              allJokes
+                                  .sort((a, b) => b.score.compareTo(a.score));
+                              Joke joke = allJokes[index];
+                              return Slidable(
+                                  // The start action pane is the left side when using a right-to-left swipe
+                                  endActionPane: ActionPane(
+                                    motion: const BehindMotion(),
+                                    children: [
+                                      SlidableAction(
+                                        onPressed: (BuildContext context) {
+                                          _jokeManager
+                                              .saveFavJokesToLocal(joke);
+                                        },
+                                        backgroundColor:
+                                            const Color(0xFFF06292),
+                                        foregroundColor: Colors.white,
+                                        icon: Icons.favorite,
+                                        label: 'Add to Favorites',
+                                      )
+                                    ],
+                                  ),
+                                  child: JokeCard(
+                                    joke: joke,
+                                    toggleVote: (UpdateAction action) {
+                                      _toggleVote(joke, action);
+                                    },
+                                    index: index,
+                                  ));
+                            },
+                          ),
+                        )
             ],
           ),
         ),
@@ -207,11 +216,11 @@ class _HomeScreenState extends State<HomeScreen> {
               },
               style: ButtonStyle(
                 shadowColor:
-                MaterialStateProperty.all<Color>(Colors.transparent),
+                    MaterialStateProperty.all<Color>(Colors.transparent),
                 backgroundColor:
-                MaterialStateProperty.all<Color>(Colors.transparent),
+                    MaterialStateProperty.all<Color>(Colors.transparent),
                 foregroundColor:
-                MaterialStateProperty.all<Color>(Colors.transparent),
+                    MaterialStateProperty.all<Color>(Colors.transparent),
               ),
               child: const Text('New Jokes',
                   style: TextStyle(

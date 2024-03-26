@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:jokes_on_the_go/screens/homescreen.dart';
+import 'package:jokes_on_the_go/screens/profile.dart';
+
 void main() {
   runApp(const MyApp());
 }
@@ -22,8 +24,9 @@ class MyApp extends StatelessWidget {
 
 class MyHomePage extends StatefulWidget {
   const MyHomePage({super.key});
+
   @override
-  State<MyHomePage>  createState() => _MyHomePageState();
+  State<MyHomePage> createState() => _MyHomePageState();
 }
 
 class _MyHomePageState extends State<MyHomePage> {
@@ -32,7 +35,7 @@ class _MyHomePageState extends State<MyHomePage> {
   static final List<Widget> _widgetOptions = <Widget>[
     const HomeScreen(),
     const Text("Favorite"),
-    const Text("Profile"),
+    const ProfileScreen(),
   ];
 
   void _onItemTapped(int index) {
@@ -40,8 +43,6 @@ class _MyHomePageState extends State<MyHomePage> {
       _selectedIndex = index;
     });
   }
-
-
 
   @override
   Widget build(BuildContext context) {

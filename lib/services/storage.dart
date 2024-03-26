@@ -42,7 +42,7 @@ class JokeManager {
     }
     fav_jokes.add(joke);
     List<String> jsonJokes =
-    fav_jokes.map((joke) => jsonEncode(joke.toJson())).toList();
+        fav_jokes.map((joke) => jsonEncode(joke.toJson())).toList();
     _prefs.setStringList('fav_jokes', jsonJokes);
   }
 
@@ -60,5 +60,57 @@ class JokeManager {
     } else {
       return [];
     }
+  }
+}
+
+enum STATISTICS { UPVOTE, DOWNVOTE, VIEWED_JOKES }
+
+class StatisticsManager {
+  late SharedPreferences _prefs;
+
+  Future<void> init() async {
+    _prefs = await SharedPreferences.getInstance();
+  }
+
+  String getKey(STATISTICS key) {
+    switch (key) {
+      case STATISTICS.UPVOTE:
+        return "stat_upvotes";
+      case STATISTICS.DOWNVOTE:
+        return "stat_downvotes";
+      case STATISTICS.VIEWED_JOKES:
+        return "stat_viewed";
+    }
+  }
+
+  //get a presaved score
+
+  Future<int?> getStatistics(
+    STATISTICS key,
+  ) async {
+    String keyAccess = getKey(key);
+    return _prefs.getInt(keyAccess);
+  }
+
+  //set a score for a joke
+  Future<void> setStatistics(STATISTICS key, int count) async {
+    String keyAccess = getKey(key);
+    await _prefs.setInt(keyAccess, count);
+  }
+
+  //increment a statistics
+  Future<void> incrementKey(STATISTICS key, int count) async {
+    int? result = await getStatistics(key);
+    if (result == null)
+      result = count;
+    else {
+      result += count;
+    }
+    await setStatistics(key, result);
+  }
+
+  //to clear all data
+  Future<void> clearData() async {
+    await _prefs.clear();
   }
 }
