@@ -15,6 +15,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   int nbUpvotes = 0;
   int nbDownvotes = 0;
   int nbViewed = 0;
+  int nbSaved = 0;
 
   @override
   void initState() {
@@ -27,16 +28,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
   //fetch the statistics
   void fetchStatistics() async {
     int? nbDownvotesResult =
-        await _statisticsManager.getStatistics(STATISTICS.DOWNVOTE);
+    await _statisticsManager.getStatistics(STATISTICS.DOWNVOTE);
     int? nbUpvotesResult =
-        await _statisticsManager.getStatistics(STATISTICS.UPVOTE);
+    await _statisticsManager.getStatistics(STATISTICS.UPVOTE);
     int? nbViewedResult =
-        await _statisticsManager.getStatistics(STATISTICS.VIEWED_JOKES);
+    await _statisticsManager.getStatistics(STATISTICS.VIEWED_JOKES);
+    int? nbSavedResult =
+    await _statisticsManager.getStatistics(STATISTICS.SAVED_JOKES);
     if (mounted) {
       setState(() {
         if (nbDownvotesResult != null) nbDownvotes = nbDownvotesResult;
         if (nbUpvotesResult != null) nbUpvotes = nbUpvotesResult;
         if (nbViewedResult != null) nbViewed = nbViewedResult;
+        if (nbSavedResult != null) nbSaved = nbSavedResult;
       });
     }
   }
@@ -47,6 +51,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         nbUpvotes = 0;
         nbDownvotes = 0;
         nbViewed = 0;
+        nbSaved = 0;
       });
     }
     _statisticsManager.clearData();
@@ -113,7 +118,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       decoration: BoxDecoration(
                           shape: BoxShape.circle,
                           border:
-                              Border.all(color: Color(0xFF9575cd), width: 5)),
+                          Border.all(color: Color(0xFF9575cd), width: 5)),
                       child: Padding(
                           padding: EdgeInsets.all(25),
                           child: Column(
@@ -123,6 +128,22 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                 style: TextStyle(fontSize: 36),
                               ),
                               const Text("Viewed Jokes")
+                            ],
+                          ))),
+                  Container(
+                      decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          border:
+                          Border.all(color: Color(0xFF9575cd), width: 5)),
+                      child: Padding(
+                          padding: const EdgeInsets.all(25),
+                          child: Column(
+                            children: [
+                              Text(
+                                "$nbSaved",
+                                style: const TextStyle(fontSize: 36),
+                              ),
+                              const Text("Saved Jokes")
                             ],
                           ))),
                 ],
@@ -173,11 +194,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
               },
               style: ButtonStyle(
                 shadowColor:
-                    MaterialStateProperty.all<Color>(Colors.transparent),
+                MaterialStateProperty.all<Color>(Colors.transparent),
                 backgroundColor:
-                    MaterialStateProperty.all<Color>(Colors.transparent),
+                MaterialStateProperty.all<Color>(Colors.transparent),
                 foregroundColor:
-                    MaterialStateProperty.all<Color>(Colors.transparent),
+                MaterialStateProperty.all<Color>(Colors.transparent),
               ),
               child: const Text('Clear Data',
                   style: TextStyle(

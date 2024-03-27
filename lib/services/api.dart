@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:math';
+
 import 'package:http/http.dart' as http;
 import 'package:jokes_on_the_go/services/storage.dart';
 import '../components/joke.dart';

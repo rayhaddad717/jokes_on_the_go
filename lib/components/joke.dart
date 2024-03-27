@@ -1,3 +1,4 @@
+import 'dart:ffi';
 import 'package:flutter/material.dart';
 
 class Joke {
@@ -11,11 +12,11 @@ class Joke {
     return Joke(json['joke'], json['id'],
         json.containsKey('score') ? json['score'] : 0);
   }
+
   toJson() {
     return {'joke': joke, 'id': id, 'score': score};
   }
 }
-
 
 //set the update action types
 enum UpdateAction {
@@ -33,14 +34,16 @@ const Map<String, String> EMOJIE = {
 
 class JokeCard extends StatelessWidget {
   final Joke joke;
+  final bool hasVote;
   final int index; //used to know the positioning for styling
   final Function(UpdateAction) toggleVote;
 
   const JokeCard(
       {super.key,
-      required this.joke,
-      required this.toggleVote,
-      required this.index});
+        required this.hasVote,
+        required this.joke,
+        required this.toggleVote,
+        required this.index});
 
   String _getEmojie() {
     if (joke.score >= 10) {
@@ -87,7 +90,11 @@ class JokeCard extends StatelessWidget {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Row(
+              !hasVote
+                  ? SizedBox(
+                width: 20,
+              )
+                  : Row(
                 mainAxisAlignment: MainAxisAlignment.start,
                 children: [
                   IconButton(
@@ -104,7 +111,8 @@ class JokeCard extends StatelessWidget {
                       padding: const EdgeInsets.all(12.0),
                       decoration: BoxDecoration(
                         color: Colors.white,
-                        border: Border.all(color: _getBorderColor(), width: 2),
+                        border: Border.all(
+                            color: _getBorderColor(), width: 2),
                         shape: BoxShape.circle,
                       ),
                       child: Row(
@@ -113,7 +121,8 @@ class JokeCard extends StatelessWidget {
                           Text(
                             "${joke.score}",
                             style: const TextStyle(
-                                fontSize: 16, fontWeight: FontWeight.bold),
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold),
                           ),
                         ],
                       )),

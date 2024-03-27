@@ -23,26 +23,40 @@ class ScoreManager {
   }
 }
 
-//this function is used to save favorite jokes to local storage
 class JokeManager {
   late SharedPreferences _prefs;
+  late StatisticsManager _statisticsManager;
 
   Future<void> init() async {
+    _statisticsManager = StatisticsManager();
+    await _statisticsManager.init();
     _prefs = await SharedPreferences.getInstance();
   }
 
   //this function is used to save a joke to our favorites
   void saveFavJokesToLocal(Joke joke) async {
-    //get all previously saved jokes
     List<Joke> fav_jokes = await fetchFavJokesFromLocal();
     var findJoke = fav_jokes.where((element) => element.id == joke.id).toList();
     if (findJoke.isNotEmpty) {
-      //joke already in favorites
       return;
-    }
+    } //joke already in favorites
     fav_jokes.add(joke);
     List<String> jsonJokes =
-        fav_jokes.map((joke) => jsonEncode(joke.toJson())).toList();
+    fav_jokes.map((joke) => jsonEncode(joke.toJson())).toList();
+    await _statisticsManager.setStatistics(
+        STATISTICS.SAVED_JOKES, fav_jokes.length);
+    _prefs.setStringList('fav_jokes', jsonJokes);
+  }
+
+  //this function is used to remove a joke from our favorites
+  void unsaveFavJokesFromLocal(Joke joke) async {
+    List<Joke> fav_jokes = await fetchFavJokesFromLocal();
+    var newFavJokes =
+    fav_jokes.where((element) => element.id != joke.id).toList();
+    List<String> jsonJokes =
+    newFavJokes.map((joke) => jsonEncode(joke.toJson())).toList();
+    await _statisticsManager.setStatistics(
+        STATISTICS.SAVED_JOKES, newFavJokes.length);
     _prefs.setStringList('fav_jokes', jsonJokes);
   }
 
@@ -63,7 +77,7 @@ class JokeManager {
   }
 }
 
-enum STATISTICS { UPVOTE, DOWNVOTE, VIEWED_JOKES }
+enum STATISTICS { UPVOTE, DOWNVOTE, VIEWED_JOKES, SAVED_JOKES }
 
 class StatisticsManager {
   late SharedPreferences _prefs;
@@ -80,14 +94,16 @@ class StatisticsManager {
         return "stat_downvotes";
       case STATISTICS.VIEWED_JOKES:
         return "stat_viewed";
+      case STATISTICS.SAVED_JOKES:
+        return "stat_saved";
     }
   }
 
   //get a presaved score
 
   Future<int?> getStatistics(
-    STATISTICS key,
-  ) async {
+      STATISTICS key,
+      ) async {
     String keyAccess = getKey(key);
     return _prefs.getInt(keyAccess);
   }

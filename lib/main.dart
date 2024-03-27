@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:jokes_on_the_go/screens/favorite.dart';
 import 'package:jokes_on_the_go/screens/homescreen.dart';
 import 'package:jokes_on_the_go/screens/profile.dart';
 
@@ -34,7 +35,7 @@ class _MyHomePageState extends State<MyHomePage> {
 
   static final List<Widget> _widgetOptions = <Widget>[
     const HomeScreen(),
-    const Text("Favorite"),
+    const FavoritesScreen(),
     const ProfileScreen(),
   ];
 

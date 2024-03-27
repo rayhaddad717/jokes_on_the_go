@@ -23,6 +23,9 @@ class _HomeScreenState extends State<HomeScreen> {
   List<Joke> allJokes = [];
   bool isLoading = true;
 
+  //sets containing all the ids of the saved jokes
+  Set<String> favoritedJokeIds = {};
+
   @override
   void initState() {
     super.initState();
@@ -42,9 +45,11 @@ class _HomeScreenState extends State<HomeScreen> {
     _statisticsManager = StatisticsManager();
     _statisticsManager.init();
     _scoreManager = ScoreManager();
-    _jokeManager = JokeManager();
     _scoreManager.init();
+    _jokeManager = JokeManager();
     _jokeManager.init().then((value) async {
+      final favoriteJokes = await _jokeManager.fetchFavJokesFromLocal();
+      favoritedJokeIds = favoriteJokes.map((joke) => joke.id).toSet();
       _fetchJokes();
     });
   }
@@ -74,7 +79,7 @@ class _HomeScreenState extends State<HomeScreen> {
     }
 
     final jokesResponse =
-        await _api.fetchJokes(_page); // Fetch jokes when the app initializes
+    await _api.fetchJokes(_page); // Fetch jokes when the app initializes
     if (mounted) {
       //make sure we have the up to date scores
       await _patchScores(jokesResponse);
@@ -111,6 +116,20 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
+  //check if a joke is already saved
+  bool _isSaved(String id) {
+    return favoritedJokeIds.contains(id);
+  }
+
+  //add a joke to our saved list
+  void _saveJoke(String jokeID) {
+    if (mounted) {
+      setState(() {
+        favoritedJokeIds.add(jokeID);
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -128,65 +147,72 @@ class _HomeScreenState extends State<HomeScreen> {
               const SizedBox(height: 25),
               isLoading
                   ? const CircularProgressIndicator(
-                      color: Color(0xFF9575cd),
-                    ) // Show loading indicator while fetching data
+                  color: Color(
+                      0xFF9575cd)) // Show loading indicator while fetching data
                   : allJokes.isEmpty
-                      ? const Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
+                  ? const Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    "We couldn't fetch any jokes!",
+                    style:
+                    TextStyle(fontSize: 32, color: Colors.grey),
+                    textAlign: TextAlign.center,
+                  ),
+                  SizedBox(height: 40),
+                  Icon(
+                    Icons.report_problem,
+                    size: 90,
+                    color: Colors.grey,
+                  ),
+                ],
+              )
+                  : Expanded(
+                child: ListView.separated(
+                  padding: const EdgeInsets.only(bottom: 70),
+                  itemCount: allJokes.length,
+                  separatorBuilder: (context, index) =>
+                  const SizedBox(height: 10),
+                  itemBuilder: (context, index) {
+                    //sort the jokes based on their score
+                    allJokes
+                        .sort((a, b) => b.score.compareTo(a.score));
+                    Joke joke = allJokes[index];
+                    return Slidable(
+                      // The start action pane is the left side when using a right-to-left swipe
+                        endActionPane: ActionPane(
+                          motion: const BehindMotion(),
                           children: [
-                            Text(
-                              "We couldn't fetch any jokes!",
-                              style:
-                                  TextStyle(fontSize: 32, color: Colors.grey),
-                              textAlign: TextAlign.center,
-                            ),
-                            SizedBox(height: 40),
-                            Icon(
-                              Icons.report_problem,
-                              size: 90,
-                              color: Colors.grey,
+                            SlidableAction(
+                              onPressed: (BuildContext context) {
+                                if (favoritedJokeIds
+                                    .contains(joke.id)) return;
+                                _saveJoke(joke.id);
+                                _jokeManager
+                                    .saveFavJokesToLocal(joke);
+                              },
+                              backgroundColor: _isSaved(joke.id)
+                                  ? Colors.grey
+                                  : const Color(0xFFF06292),
+                              foregroundColor: Colors.white,
+                              icon: Icons.favorite,
+                              label: _isSaved(joke.id)
+                                  ? 'Already in Favorites'
+                                  : 'Add to Favorites',
                             ),
                           ],
-                        )
-                      : Expanded(
-                          child: ListView.separated(
-                            padding: const EdgeInsets.only(bottom: 70),
-                            itemCount: allJokes.length,
-                            separatorBuilder: (context, index) =>
-                                const SizedBox(height: 10),
-                            itemBuilder: (context, index) {
-                              //sort the jokes based on their score
-                              allJokes
-                                  .sort((a, b) => b.score.compareTo(a.score));
-                              Joke joke = allJokes[index];
-                              return Slidable(
-                                  // The start action pane is the left side when using a right-to-left swipe
-                                  endActionPane: ActionPane(
-                                    motion: const BehindMotion(),
-                                    children: [
-                                      SlidableAction(
-                                        onPressed: (BuildContext context) {
-                                          _jokeManager
-                                              .saveFavJokesToLocal(joke);
-                                        },
-                                        backgroundColor:
-                                            const Color(0xFFF06292),
-                                        foregroundColor: Colors.white,
-                                        icon: Icons.favorite,
-                                        label: 'Add to Favorites',
-                                      )
-                                    ],
-                                  ),
-                                  child: JokeCard(
-                                    joke: joke,
-                                    toggleVote: (UpdateAction action) {
-                                      _toggleVote(joke, action);
-                                    },
-                                    index: index,
-                                  ));
-                            },
-                          ),
-                        )
+                        ),
+                        child: JokeCard(
+                          joke: joke,
+                          toggleVote: (UpdateAction action) {
+                            _toggleVote(joke, action);
+                          },
+                          hasVote: true,
+                          index: index,
+                        ));
+                  },
+                ),
+              ),
             ],
           ),
         ),
@@ -216,11 +242,11 @@ class _HomeScreenState extends State<HomeScreen> {
               },
               style: ButtonStyle(
                 shadowColor:
-                    MaterialStateProperty.all<Color>(Colors.transparent),
+                MaterialStateProperty.all<Color>(Colors.transparent),
                 backgroundColor:
-                    MaterialStateProperty.all<Color>(Colors.transparent),
+                MaterialStateProperty.all<Color>(Colors.transparent),
                 foregroundColor:
-                    MaterialStateProperty.all<Color>(Colors.transparent),
+                MaterialStateProperty.all<Color>(Colors.transparent),
               ),
               child: const Text('New Jokes',
                   style: TextStyle(
