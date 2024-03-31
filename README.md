@@ -1,5 +1,9 @@
 # Jokes On the GO!!
 
+## Video
+
+Checkout our video presentation in the following link: https://drive.google.com/file/d/1egrWHtBwx2xjLcsBv4oGAR1_Ya54zAAy/view?usp=sharing
+
 ## About
 
 Jokes On the GO is a fun and interactive application that brings you a daily dose of laughter! Discover new jokes every day, rate them, and save your favorites for future enjoyment. Dive into your humor history in the profile section, where you can track your joke interactions and preferences.
